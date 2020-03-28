@@ -7,13 +7,16 @@ import matplotlib.animation as animation
 
 
 class ParticleBox:
-    def __init__(self,initial_health, initial_positions, initial_velocities, boundaries, size):
+    def __init__(self,p_recov,initial_health, initial_positions, initial_velocities, boundaries, size):
         self.health = np.asarray(initial_health)        
         self.positions = np.asarray(initial_positions)
         self.velocities = np.asarray(initial_velocities)
         self.size = size
         self.boundaries = boundaries
         self.time_elapsed = 0
+        self.p_recov = p_recov
+        self.days_since_infected = np.zeros(initial_health.shape)
+
 
     def step(self,dt):
         self.time_elapsed += dt
@@ -35,6 +38,15 @@ class ParticleBox:
                 self.health[i2] = 1
             elif(self.health[i1]==0 and self.health[i2]==1):
                 self.health[i1] = 1
+        
+        infected_case_ind = np.where(self.health==1)[0]        
+        self.days_since_infected[infected_case_ind] += 1
+        # Update the recovered cases
+        for case_index in infected_case_ind:
+            if self.days_since_infected[case_index]>10:
+                if np.random.random()<self.p_recov:
+                    self.health[case_index] = 2
+
         #Check the boundaries
         crossed_left   = self.positions[:,0] < self.boundaries[0] + self.size
         crossed_right  = self.positions[:,0] > self.boundaries[1] - self.size
@@ -49,21 +61,20 @@ class ParticleBox:
         self.velocities[crossed_right | crossed_left, 0] *= -1
         self.velocities[crossed_top | crossed_bottom, 1] *= -1
 # 
-n_particles = 50
+n_particles = 100
 box_size = 4.0
 n_infected = 1 # number of initially infected people
 
 # set up initial state
-# np.random.seed(0)
+np.random.seed(0)
+p_recov = 0.004
 initial_positions = box_size*np.random.random((n_particles, 2))
-initial_velocities = np.random.random((n_particles, 2))
-
+initial_velocities = -0.5 + np.random.random((n_particles, 2))
 initial_health = np.zeros(n_particles) # 0 if healthy, 1 if infected, 2 if recovered
 initial_health[np.random.randint(0,n_particles,n_infected)] = 1
-
 boundaries = box_size*np.asarray([0,1,0,1])
 
-box = ParticleBox(initial_health,initial_positions,initial_velocities,boundaries, size=0.004)
+box = ParticleBox(p_recov,initial_health,initial_positions,initial_velocities,boundaries, size=0.004)
 dt = 1. / 30 # 30fps
 
 
@@ -88,7 +99,7 @@ def init_animation():
     recovered_particles.set_data([],[])
 
     rect.set_edgecolor('none')
-    return particles,infected_particles,rect
+    return particles,infected_particles,recovered_particles, rect
 
 def animate(i):
     global box, rect, dt, ax, fig
@@ -97,7 +108,8 @@ def animate(i):
     rect.set_edgecolor('k')
     particles.set_data(box.positions[box.health==0,0], box.positions[box.health==0,1])
     infected_particles.set_data(box.positions[box.health==1,0],box.positions[box.health==1,1] )
-    return particles,infected_particles, rect
+    recovered_particles.set_data(box.positions[box.health==2,0],box.positions[box.health==2,1])
+    return particles,infected_particles,recovered_particles, rect
 
 ani = animation.FuncAnimation(fig,animate,frames=600,interval=10, blit=True, init_func=init_animation)
 # ani.save('anim.mp4')
