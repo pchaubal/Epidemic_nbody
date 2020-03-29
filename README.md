@@ -2,7 +2,7 @@
 This is an attempt to simulate epidemic spread inspired from 3blue1brown channel
 
 # TODO list
-* Implement the senario of death
+* Implement the scenario of death
 * Implement infection radius
 * Show a plot on side which keeps a track of healthy/infected/recovered
 * Implement a repulsive force for social distancing
@@ -15,5 +15,3 @@ This is an attempt to simulate epidemic spread inspired from 3blue1brown channel
 * Social distancing and hygiene on individual basis. Does social distance and hygiene prove advantageous on individual basis?
 * Implement quarantine only if a person is detected positive. The probability of a person being detected depends upon symptoms and symptoms are related to severity. 
 * Relate the severity of disease with demographic information. 
-
-**Bonus challenge: Change marker to James Paynter's face when infected**
