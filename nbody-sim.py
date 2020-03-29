@@ -16,7 +16,9 @@ class ParticleBox:
         self.time_elapsed = 0
         self.p_recov = p_recov
         self.days_since_infected = np.zeros(initial_health.shape)
-
+        self.n_healthy = []
+        self.n_infected = []
+        self.n_recovered = []
 
     def step(self,dt):
         self.time_elapsed += dt
@@ -60,16 +62,21 @@ class ParticleBox:
 
         self.velocities[crossed_right | crossed_left, 0] *= -1
         self.velocities[crossed_top | crossed_bottom, 1] *= -1
-# 
-n_particles = 1000
+#       
+        self.n_healthy.append(self.health[self.health==0].shape[0])
+        self.n_infected.append(self.health[self.health==1].shape[0])
+        self.n_recovered.append(self.health[self.health==2].shape[0])
+
+
+n_particles = 500
 box_size = 4.0
 n_infected = 1 # number of initially infected people
 
 # set up initial state
 np.random.seed(0)
-p_recov = 0.004
+p_recov = 0.02
 initial_positions = box_size*np.random.random((n_particles, 2))
-initial_velocities = -0.5 + np.random.random((n_particles, 2))
+initial_velocities = -.5 + np.random.random((n_particles, 2))
 initial_health = np.zeros(n_particles) # 0 if healthy, 1 if infected, 2 if recovered
 initial_health[np.random.randint(0,n_particles,n_infected)] = 1
 boundaries = box_size*np.asarray([0,1,0,1])
@@ -86,27 +93,33 @@ dt = 1. / 30 # 30fps
 # Animation
 # plt.xkcd()
 fig = plt.figure()
+grid = plt.GridSpec(4,3)
 # fig.subplots_adjust(left=0, right=5, bottom=0, top=5)
-ax = fig.add_subplot(111, aspect='equal', autoscale_on=False, xlim=(-0.2, box_size +.2), ylim=(-0.2, box_size +.2))
+ax = fig.add_subplot(grid[:3,:], aspect='equal', autoscale_on=False, xlim=(-0.2, box_size +.2), ylim=(-0.2, box_size +.2))
 ax.axis('off')
-# ax.set_xticklabels([],[])
-
 particles, = ax.plot([],[],'bo',ms=4)
 infected_particles, = ax.plot([],[],'ro',ms=4)
 recovered_particles, = ax.plot([],[],'yo',ms=4)
-
 rect = plt.Rectangle(box.boundaries[::2],box_size,box_size,
                      ec='none', lw=2, fc='none')
 ax.add_patch(rect)
 
+ax2 = fig.add_subplot(grid[3,:],xlim=(0,10), ylim=(0,105))
+pop, = ax2.plot([],[])
+pop2, = ax2.plot([],[],'-r')
+ax2.set_xlabel('time')
+ax2.set_ylabel('Percentage')
+days = []
 def init_animation():
     global box, rect
     particles.set_data([],[])
     infected_particles.set_data([],[])
     recovered_particles.set_data([],[])
-
     rect.set_edgecolor('none')
-    return particles,infected_particles,recovered_particles, rect
+    
+    pop.set_data([],[])
+
+    return particles,infected_particles,recovered_particles, rect,pop, pop2,
 
 def animate(i):
     global box, rect, dt, ax, fig
@@ -116,8 +129,13 @@ def animate(i):
     particles.set_data(box.positions[box.health==0,0], box.positions[box.health==0,1])
     infected_particles.set_data(box.positions[box.health==1,0],box.positions[box.health==1,1] )
     recovered_particles.set_data(box.positions[box.health==2,0],box.positions[box.health==2,1])
-    return particles,infected_particles,recovered_particles, rect
+    
+    days.append(i)
+    ax2.set_xlim(0, max(days))
+    pop.set_data(days, 100*np.asarray(box.n_healthy)/n_particles)
+    pop2.set_data(days,100*np.asarray(box.n_infected)/n_particles)
+    return particles,infected_particles,recovered_particles, rect,pop,pop2
 
-ani = animation.FuncAnimation(fig,animate,frames=500,interval=10, blit=True, init_func=init_animation)
-# ani.save('covid19.mp4',writer="ffmpeg")
-plt.show()
+ani = animation.FuncAnimation(fig,animate,frames=800,interval=20, init_func=init_animation)
+ani.save('covid19.mp4',writer="ffmpeg")
+# plt.show()
