@@ -61,7 +61,7 @@ class ParticleBox:
         self.velocities[crossed_right | crossed_left, 0] *= -1
         self.velocities[crossed_top | crossed_bottom, 1] *= -1
 # 
-n_particles = 100
+n_particles = 1000
 box_size = 4.0
 n_infected = 1 # number of initially infected people
 
@@ -74,19 +74,26 @@ initial_health = np.zeros(n_particles) # 0 if healthy, 1 if infected, 2 if recov
 initial_health[np.random.randint(0,n_particles,n_infected)] = 1
 boundaries = box_size*np.asarray([0,1,0,1])
 
-box = ParticleBox(p_recov,initial_health,initial_positions,initial_velocities,boundaries, size=0.004)
+box = ParticleBox(p_recov,
+                    initial_health,
+                    initial_positions,
+                    initial_velocities,
+                    boundaries, size=0.04)
 dt = 1. / 30 # 30fps
 
 
 
 # Animation
+# plt.xkcd()
 fig = plt.figure()
 # fig.subplots_adjust(left=0, right=5, bottom=0, top=5)
-ax = fig.add_subplot(111, aspect='equal', autoscale_on=False, xlim=(-0.2, 4.2), ylim=(-0.2, 4.2))
-# ax = fig.add_subplot(111,aspect='equal',autoscale_on=True)
+ax = fig.add_subplot(111, aspect='equal', autoscale_on=False, xlim=(-0.2, box_size +.2), ylim=(-0.2, box_size +.2))
+ax.axis('off')
+# ax.set_xticklabels([],[])
+
 particles, = ax.plot([],[],'bo',ms=4)
 infected_particles, = ax.plot([],[],'ro',ms=4)
-recovered_particles, = ax.plot([],[],'go',ms=4)
+recovered_particles, = ax.plot([],[],'yo',ms=4)
 
 rect = plt.Rectangle(box.boundaries[::2],box_size,box_size,
                      ec='none', lw=2, fc='none')
@@ -111,6 +118,6 @@ def animate(i):
     recovered_particles.set_data(box.positions[box.health==2,0],box.positions[box.health==2,1])
     return particles,infected_particles,recovered_particles, rect
 
-ani = animation.FuncAnimation(fig,animate,frames=600,interval=10, blit=True, init_func=init_animation)
-# ani.save('anim.mp4')
+ani = animation.FuncAnimation(fig,animate,frames=500,interval=10, blit=True, init_func=init_animation)
+# ani.save('covid19.mp4',writer="ffmpeg")
 plt.show()
