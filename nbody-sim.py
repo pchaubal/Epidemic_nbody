@@ -19,6 +19,7 @@ class ParticleBox:
         self.n_healthy = []
         self.n_infected = []
         self.n_recovered = []
+        self.n_death = []
 
     def step(self,dt):
         self.time_elapsed += dt
@@ -34,21 +35,24 @@ class ParticleBox:
         ind2 = ind2[unique]
 
         for i1,i2 in zip(ind1,ind2):
-            self.velocities[[i1,i2]] = self.velocities[[i2,i1]] 
-            # Infect the particles which collide with infected particles
-            if (self.health[i1] == 1 and self.health[i2]==0):
-                self.health[i2] = 1
-            elif(self.health[i1]==0 and self.health[i2]==1):
-                self.health[i1] = 1
+            if np.all(self.health[[i1,i2]]!=3):
+                self.velocities[[i1,i2]] = self.velocities[[i2,i1]] 
+                # Infect the particles which collide with infected particles
+                if (self.health[i1] == 1 and self.health[i2]==0):
+                    self.health[i2] = 1
+                elif(self.health[i1]==0 and self.health[i2]==1):
+                    self.health[i1] = 1
         
         infected_case_ind = np.where(self.health==1)[0]        
         self.days_since_infected[infected_case_ind] += 1
         # Update the recovered cases
         for case_index in infected_case_ind:
             if self.days_since_infected[case_index]>10:
-                if np.random.random()<self.p_recov:
+                if np.random.random()<self.p_recov:#recovery
                     self.health[case_index] = 2
-
+                if np.random.random()<0.002:# death
+                    self.health[case_index] = 3 
+                    self.velocities[case_index,:] = 0
         #Check the boundaries
         crossed_left   = self.positions[:,0] < self.boundaries[0] + self.size
         crossed_right  = self.positions[:,0] > self.boundaries[1] - self.size
@@ -66,7 +70,7 @@ class ParticleBox:
         self.n_healthy.append(self.health[self.health==0].shape[0])
         self.n_infected.append(self.health[self.health==1].shape[0])
         self.n_recovered.append(self.health[self.health==2].shape[0])
-
+        self.n_death.append(self.health[self.health==3].shape[0])
 
 n_particles = 500
 box_size = 4.0
@@ -100,6 +104,7 @@ ax.axis('off')
 particles, = ax.plot([],[],'bo',ms=4)
 infected_particles, = ax.plot([],[],'ro',ms=4)
 recovered_particles, = ax.plot([],[],'yo',ms=4)
+dead_particles, = ax.plot([],[],'ko',ms=4)
 rect = plt.Rectangle(box.boundaries[::2],box_size,box_size,
                      ec='none', lw=2, fc='none')
 ax.add_patch(rect)
@@ -107,6 +112,8 @@ ax.add_patch(rect)
 ax2 = fig.add_subplot(grid[3,:],xlim=(0,10), ylim=(0,105))
 pop, = ax2.plot([],[])
 pop2, = ax2.plot([],[],'-r')
+pop3, = ax2.plot([],[],'-k')
+
 ax2.set_xlabel('time')
 ax2.set_ylabel('Percentage')
 days = []
@@ -115,11 +122,14 @@ def init_animation():
     particles.set_data([],[])
     infected_particles.set_data([],[])
     recovered_particles.set_data([],[])
+    dead_particles.set_data([],[])
+
     rect.set_edgecolor('none')
     
     pop.set_data([],[])
-
-    return particles,infected_particles,recovered_particles, rect,pop, pop2,
+    pop2.set_data([],[])
+    pop3.set_data([],[])
+    return particles,infected_particles,recovered_particles,dead_particles, rect,pop, pop2,pop3
 
 def animate(i):
     global box, rect, dt, ax, fig
@@ -129,12 +139,15 @@ def animate(i):
     particles.set_data(box.positions[box.health==0,0], box.positions[box.health==0,1])
     infected_particles.set_data(box.positions[box.health==1,0],box.positions[box.health==1,1] )
     recovered_particles.set_data(box.positions[box.health==2,0],box.positions[box.health==2,1])
-    
+    dead_particles.set_data(box.positions[box.health==3,0],box.positions[box.health==3,1])
+
+
     days.append(i)
     ax2.set_xlim(0, max(days))
     pop.set_data(days, 100*np.asarray(box.n_healthy)/n_particles)
     pop2.set_data(days,100*np.asarray(box.n_infected)/n_particles)
-    return particles,infected_particles,recovered_particles, rect,pop,pop2
+    pop3.set_data(days,100*np.asarray(box.n_death)/n_particles)
+    return particles,infected_particles,recovered_particles,dead_particles, rect,pop,pop2,pop3
 
 ani = animation.FuncAnimation(fig,animate,frames=800,interval=20, init_func=init_animation)
 ani.save('covid19.mp4',writer="ffmpeg")
