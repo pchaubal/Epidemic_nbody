@@ -7,19 +7,29 @@ import matplotlib.animation as animation
 
 
 class ParticleBox:
-    def __init__(self,p_recov,initial_health, initial_positions, initial_velocities, boundaries, size):
+    def __init__(self,p_recov,initial_health, box_size, size):
         self.health = np.asarray(initial_health)        
-        self.positions = np.asarray(initial_positions)
-        self.velocities = np.asarray(initial_velocities)
+        self.positions = box_size*np.random.random((n_particles, 2))
+        self.velocities =2*(np.random.random((n_particles, 2)) - 0.5)
         self.size = size
-        self.boundaries = boundaries
+        self.boundaries = box_size*np.asarray([0,1,0,1])
         self.time_elapsed = 0
         self.p_recov = p_recov
         self.days_since_infected = np.zeros(initial_health.shape)
+        
         self.n_healthy = []
         self.n_infected = []
         self.n_recovered = []
         self.n_death = []
+   
+#     def infect(self,infection_radius,prob_inf):
+#         
+#         infected_case_ind = np.where(self.health==1)[0]        
+#         if dist < infection_radius:
+            #infect with probability prob_inf
+
+
+
 
     def step(self,dt):
         self.time_elapsed += dt
@@ -50,7 +60,7 @@ class ParticleBox:
             if self.days_since_infected[case_index]>10:
                 if np.random.random()<self.p_recov:#recovery
                     self.health[case_index] = 2
-                if np.random.random()<0.002:# death
+                if np.random.random()<0.001:# death
                     self.health[case_index] = 3 
                     self.velocities[case_index,:] = 0
         #Check the boundaries
@@ -72,24 +82,19 @@ class ParticleBox:
         self.n_recovered.append(self.health[self.health==2].shape[0])
         self.n_death.append(self.health[self.health==3].shape[0])
 
-n_particles = 500
+n_particles = 100
 box_size = 4.0
 n_infected = 1 # number of initially infected people
 
 # set up initial state
-np.random.seed(0)
-p_recov = 0.02
-initial_positions = box_size*np.random.random((n_particles, 2))
-initial_velocities = -.5 + np.random.random((n_particles, 2))
+# np.random.seed(0)
+p_recov = 0.002
 initial_health = np.zeros(n_particles) # 0 if healthy, 1 if infected, 2 if recovered
 initial_health[np.random.randint(0,n_particles,n_infected)] = 1
-boundaries = box_size*np.asarray([0,1,0,1])
 
 box = ParticleBox(p_recov,
                     initial_health,
-                    initial_positions,
-                    initial_velocities,
-                    boundaries, size=0.04)
+                    box_size, size=0.04)
 dt = 1. / 30 # 30fps
 
 
@@ -97,19 +102,19 @@ dt = 1. / 30 # 30fps
 # Animation
 # plt.xkcd()
 fig = plt.figure()
-grid = plt.GridSpec(4,3)
+grid = plt.GridSpec(6,6)
 # fig.subplots_adjust(left=0, right=5, bottom=0, top=5)
-ax = fig.add_subplot(grid[:3,:], aspect='equal', autoscale_on=False, xlim=(-0.2, box_size +.2), ylim=(-0.2, box_size +.2))
+ax = fig.add_subplot(grid[2:,2:], aspect='equal', autoscale_on=False, xlim=(-0.2, box_size +.2), ylim=(-0.2, box_size +.2))
 ax.axis('off')
 particles, = ax.plot([],[],'bo',ms=4)
 infected_particles, = ax.plot([],[],'ro',ms=4)
 recovered_particles, = ax.plot([],[],'yo',ms=4)
-dead_particles, = ax.plot([],[],'ko',ms=4)
+dead_particles, = ax.plot([],[],'kx',ms=4)
 rect = plt.Rectangle(box.boundaries[::2],box_size,box_size,
                      ec='none', lw=2, fc='none')
 ax.add_patch(rect)
 
-ax2 = fig.add_subplot(grid[3,:],xlim=(0,10), ylim=(0,105))
+ax2 = fig.add_subplot(grid[:3,:2],xlim=(0,10), ylim=(0,105))
 pop, = ax2.plot([],[])
 pop2, = ax2.plot([],[],'-r')
 pop3, = ax2.plot([],[],'-k')
@@ -150,5 +155,5 @@ def animate(i):
     return particles,infected_particles,recovered_particles,dead_particles, rect,pop,pop2,pop3
 
 ani = animation.FuncAnimation(fig,animate,frames=800,interval=20, init_func=init_animation)
-ani.save('covid19.mp4',writer="ffmpeg")
+ani.save('covid19.gif',writer="imagemagic",fps=30)
 # plt.show()
