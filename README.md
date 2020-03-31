@@ -1,5 +1,8 @@
 # covid19_nbody
-This is an attempt to simulate epidemic spread inspired from 3blue1brown channel
+This is an attempt to simulate epidemic spread inspired from 3blue1brown channel.
+Here is how the simulation looks:
+![Alt Text](./covid19.gif)
+
 
 # TODO list
 * Implement infection radius
