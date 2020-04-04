@@ -5,11 +5,9 @@ Here is how the simulation looks:
 
 
 # TODO list
-* Implement infection radius
 * Implement a repulsive force for social distancing
 * Implement multiple colonies
 * Include demographic information
-* Humans dont undergo elastic collisions. The particles should slow down when coming close to other particles but travel with some velocity otherwise.
 * Implement quarantine
 * Implement a scenario where everyday the severity of disease increases or decreases with some probability.  The probability of death increases with severity
 * Include a probability of person getting infected when in contact with infected person as an approximation for better hygiene habits

@@ -7,13 +7,14 @@ import matplotlib.animation as animation
 import utils
 
 class ParticleBox:
-    def __init__(self,p_infect,p_recov,initial_health, box_size, size):
+    def __init__(self,p_infect,radius_infect,p_recov,initial_health, box_size, size):
         self.health = np.asarray(initial_health)        
         self.positions = box_size*np.random.random((n_particles, 2))
         self.velocities =1.0*(np.random.random((n_particles, 2)) - 0.5)
         self.size = size
         self.boundaries = box_size*np.asarray([0,1,0,1])
         self.time_elapsed = 0
+        self.radius_infect = radius_infect
         self.p_infect = p_infect
         self.p_recov = p_recov
         self.days_since_infected = np.zeros(initial_health.shape)
@@ -49,7 +50,7 @@ class ParticleBox:
 
         #Update velocities upon collision
         tree = cKDTree(self.positions)
-        pairs = tree.query_pairs(2*self.size,output_type='ndarray') 
+        pairs = tree.query_pairs(self.radius_infect,output_type='ndarray') 
         ind1 = pairs[:,0]
         ind2 = pairs[:,1]
         
@@ -88,11 +89,13 @@ n_infected = 1 # number of initially infected people
 # set up initial state
 np.random.seed(0)
 p_infect = .02
+radius_infect = 0.1
 p_recov = 0.01
 initial_health = np.zeros(n_particles) # 0 if healthy, 1 if infected, 2 if recovered
 initial_health[np.random.randint(0,n_particles,n_infected)] = 1
 
 box = ParticleBox(p_infect,
+                    radius_infect,
                     p_recov,
                     initial_health,
                     box_size, size=0.04)
